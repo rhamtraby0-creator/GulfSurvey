@@ -1,0 +1,14 @@
+.env
+*.db
+*.db-wal
+*.db-shm
+*.backup*
+data/
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.before_lock_fix
+GulfSurvey/
+install_one_vote.py
+reset_survey.py

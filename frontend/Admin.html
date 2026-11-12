@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>پنل مدیریت نظرسنجی | پالایش گاز بیدبلند خلیج فارس</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="login-page" id="loginView">
+    <div class="login-card">
+      <div class="logo-wrap"><img src="/assets/company-logo.png" alt="لوگو" /></div>
+      <h1>ورود به پنل مدیریت</h1>
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="password">رمز مدیر</label>
+          <div class="input-wrap">
+            <input type="password" id="password" name="password" autocomplete="current-password" required placeholder="رمز عبور را وارد کنید" />
+            <button type="button" class="toggle-pass" id="togglePass" title="نمایش/مخفی">👁</button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="loginBtn">ورود به پنل</button>
+        <p class="login-error" id="loginError"></p>
+        <p class="login-wait hidden" id="loginWait"></p>
+      </form>
+    </div>
+  </div>
+
+  <div class="admin-layout hidden" id="dashboardView">
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <img src="/assets/company-logo.png" alt="لوگو" />
+        <span>پنل مدیریت<br />نظرسنجی</span>
+      </div>
+      <nav>
+        <button class="nav-item active" data-page="dashboard">📊 داشبورد اصلی</button>
+        <button class="nav-item" data-page="responses">📋 تمام نظرسنجی‌ها</button>
+        <button class="nav-item" data-page="averages">📈 آمار و میانگین‌ها</button>
+        <button class="nav-item" data-page="questions">📝 گزارش سؤالات</button>
+        <button class="nav-item" data-page="feedbacks">💬 پیشنهادها و انتقادات</button>
+        <button class="nav-item" data-page="quality">🔍 تحلیل کیفیت خدمات</button>
+        <button class="nav-item" data-page="health">💚 سلامت فنی سامانه</button>
+        <button class="nav-item" data-page="exports">📤 خروجی گزارش‌ها</button>
+        <button class="nav-item" data-page="backup">💾 نسخه پشتیبان</button>
+        <button class="nav-item" data-page="security">🔒 تنظیمات امنیتی</button>
+        <button class="nav-item" data-page="logout" style="margin-top:1.5rem;color:#fca5a5">🚪 خروج امن</button>
+      </nav>
+    </aside>
+    <main class="main-content">
+      <div class="page-title">
+        <div class="flex items-center gap-1">
+          <button class="menu-toggle" id="menuToggle">☰</button>
+          <h2 id="pageTitle">داشبورد اصلی</h2>
+        </div>
+      </div>
+      <div id="page-dashboard" class="page-content"></div>
+      <div id="page-responses" class="page-content hidden"></div>
+      <div id="page-averages" class="page-content hidden"></div>
+      <div id="page-questions" class="page-content hidden"></div>
+      <div id="page-feedbacks" class="page-content hidden"></div>
+      <div id="page-quality" class="page-content hidden"></div>
+      <div id="page-health" class="page-content hidden"></div>
+      <div id="page-exports" class="page-content hidden"></div>
+      <div id="page-backup" class="page-content hidden"></div>
+      <div id="page-security" class="page-content hidden"></div>
+    </main>
+  </div>
+  <div class="toast" id="toast"></div>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

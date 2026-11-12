@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="description" content="نظرسنجی میزان رضایت از وعده غذایی ناهار - پالایش گاز بیدبلند خلیج فارس" />
+  <title>نظرسنجی وعده غذایی ناهار | پالایش گاز بیدبلند خلیج فارس</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="logo-wrap">
+        <img src="/assets/company-logo.png" alt="لوگوی پالایش گاز بیدبلند خلیج فارس" id="companyLogo" />
+        <div class="logo-text">
+          پالایش گاز بیدبلند خلیج فارس
+          <span>Bidboland Persian Gulf Gas Refining</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" id="surveyApp">
+    <section class="intro">
+      <h1>نظرسنجی میزان رضایت از وعده غذایی ناهار</h1>
+      <p>همکار گرامی، لطفاً با تکمیل این نظرسنجی، ما را در ارزیابی و ارتقای کیفیت خدمات وعده غذایی ناهار یاری فرمایید.</p>
+    </section>
+
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>پیشرفت تکمیل فرم</span>
+        <span id="progressText">۰ از ۱۱</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+
+    <form id="surveyForm" novalidate>
+      <div id="questionsContainer"></div>
+      <div class="card feedback-section">
+        <h3 style="margin-bottom:0.5rem;color:var(--navy)">پیشنهادها و انتقادات شما</h3>
+        <p style="font-size:0.9rem;margin-bottom:0.75rem;color:var(--text)">
+          در صورت تمایل می‌توانید پیشنهاد یا انتقاد خود را در جهت ارتقای سطح رضایت از وعده غذایی ناهار اعلام بفرمایید.
+        </p>
+        <textarea id="feedback" name="feedback" maxlength="2000" placeholder="متن پیشنهاد یا انتقاد خود را اینجا بنویسید..." rows="4"></textarea>
+        <div class="char-count"><span id="charCount">۰</span> / ۲۰۰۰</div>
+      </div>
+      <div class="mt-3 mb-2">
+        <button type="submit" class="btn btn-primary btn-block" id="submitBtn">ثبت و ارسال نظرسنجی</button>
+      </div>
+      <p id="formError" class="text-center" style="color:var(--error);min-height:1.5em;font-size:0.95rem;"></p>
+    </form>
+  </main>
+
+  <div class="thanks-page hidden" id="thanksPage">
+    <div class="thanks-card">
+      <img src="/assets/company-logo.png" alt="لوگو" class="thanks-logo" />
+      <div class="check-circle">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </div>
+      <h1>از مشارکت ارزشمند شما سپاسگزاریم</h1>
+      <p>نظرات و دیدگاه‌های شما نقش مهمی در بهبود کیفیت خدمات و ارتقای سطح رضایت از وعده‌های غذایی دارد. از زمانی که برای تکمیل این نظرسنجی اختصاص دادید، صمیمانه تشکر می‌کنیم.</p>
+      <div class="thanks-footer">
+        با تشکر<br />امور اداری<br />پالایش گاز بیدبلند خلیج فارس
+      </div>
+      <p class="thanks-tagline">همراهی شما، گامی مؤثر در مسیر بهبود مستمر کیفیت خدمات است.</p>
+      <p style="margin-top:1.25rem;font-size:0.85rem;color:var(--text)">شناسه مشارکت شما: <strong id="participantIdDisplay">—</strong></p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="/js/survey.js"></script>
+</body>
+</html>
