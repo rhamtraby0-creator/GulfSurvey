@@ -193,7 +193,7 @@ async def submit_survey(data: SurveySubmit, request: Request):
             detail="با تشکر، شما قبلاً رأی داده‌اید."
         )
     except Exception as e:
-        print("SURVEY_SAVE_ERROR:", repr(e))
+        print("SURVEY_SAVE_ERROR:", repr(e)); import traceback; traceback.print_exc()
         raise HTTPException(
             status_code=500,
             detail="خطا در ذخیره‌سازی. لطفاً دوباره تلاش کنید."
