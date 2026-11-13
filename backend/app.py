@@ -128,51 +128,23 @@ async def admin_page():
     return HTMLResponse("<h1>Admin.html not found</h1>", status_code=404)
 
 
+
 @app.post("/api/survey/submit")
 async def submit_survey(data: SurveySubmit, request: Request):
     client_token = request.headers.get("X-Client-Token", "").strip()
 
     if not re.fullmatch(r"[A-Za-z0-9_-]{20,100}", client_token):
-        raise HTTPException(
-            status_code=400,
-            detail="شناسه مرورگر معتبر نیست."
-        )
+        raise HTTPException(status_code=400, detail="شناسه مرورگر معتبر نیست.")
+
+    answers = [getattr(data, f"q{i}") for i in range(1, 12)]
+
+    if any(not isinstance(x, int) or x < 1 or x > 4 for x in answers):
+        raise HTTPException(status_code=422, detail="پاسخ‌های نظرسنجی معتبر نیستند.")
 
     try:
         with get_db() as conn:
-            columns = {
-                row["name"]
-                for row in conn.execute("PRAGMA table_info(responses)")
-            }
-
-            if "client_token" not in columns:
-                conn.execute(
-                    "ALTER TABLE responses ADD COLUMN client_token TEXT"
-                )
-
-            conn.execute("""
-                CREATE UNIQUE INDEX IF NOT EXISTS
-                idx_responses_client_token
-                ON responses(client_token)
-            """)
-
-            required = {
-                "participant_id", "client_token",
-                "q1", "q2", "q3", "q4", "q5", "q6",
-                "q7", "q8", "q9", "q10", "q11",
-                "feedback", "created_at", "status"
-            }
-
-            columns = {
-                row["name"]
-                for row in conn.execute("PRAGMA table_info(responses)")
-            }
-
-            missing = required - columns
-            if missing:
-                raise RuntimeError(
-                    "Missing responses columns: " + ", ".join(sorted(missing))
-                )
+            # Serialize simultaneous submissions.
+            conn.execute("BEGIN IMMEDIATE")
 
             existing = conn.execute(
                 "SELECT participant_id FROM responses WHERE client_token = ?",
@@ -183,17 +155,6 @@ async def submit_survey(data: SurveySubmit, request: Request):
                 raise HTTPException(
                     status_code=409,
                     detail="با تشکر، شما قبلاً رأی داده‌اید."
-                )
-
-            answers = [
-                getattr(data, f"q{i}")
-                for i in range(1, 12)
-            ]
-
-            if any(not isinstance(x, int) or x < 1 or x > 4 for x in answers):
-                raise HTTPException(
-                    status_code=422,
-                    detail="پاسخ‌های نظرسنجی معتبر نیستند."
                 )
 
             pid = get_next_participant_id(conn)
@@ -208,9 +169,7 @@ async def submit_survey(data: SurveySubmit, request: Request):
                 )
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'registered')
             """, (
-                pid, client_token,
-                *answers,
-                feedback, now
+                pid, client_token, *answers, feedback, now
             ))
 
             try:
@@ -218,11 +177,7 @@ async def submit_survey(data: SurveySubmit, request: Request):
                     INSERT INTO system_logs
                     (event_type, message, created_at)
                     VALUES (?, ?, ?)
-                """, (
-                    "survey_submitted",
-                    f"participant={pid}",
-                    now
-                ))
+                """, ("survey_submitted", f"participant={pid}", now))
             except sqlite3.Error as log_error:
                 print("SURVEY_LOG_ERROR:", repr(log_error))
 
@@ -234,13 +189,11 @@ async def submit_survey(data: SurveySubmit, request: Request):
 
     except HTTPException:
         raise
-
     except sqlite3.IntegrityError:
         raise HTTPException(
             status_code=409,
             detail="این نظرسنجی قبلاً ثبت شده است."
         )
-
     except Exception as e:
         import traceback
         print("SURVEY_SAVE_ERROR:", repr(e))
