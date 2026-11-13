@@ -127,6 +127,7 @@ async def admin_page():
         return HTMLResponse(admin_path.read_text(encoding="utf-8"))
     return HTMLResponse("<h1>Admin.html not found</h1>", status_code=404)
 
+
 @app.post("/api/survey/submit")
 async def submit_survey(data: SurveySubmit, request: Request):
     client_token = request.headers.get("X-Client-Token", "").strip()
@@ -139,6 +140,40 @@ async def submit_survey(data: SurveySubmit, request: Request):
 
     try:
         with get_db() as conn:
+            columns = {
+                row["name"]
+                for row in conn.execute("PRAGMA table_info(responses)")
+            }
+
+            if "client_token" not in columns:
+                conn.execute(
+                    "ALTER TABLE responses ADD COLUMN client_token TEXT"
+                )
+
+            conn.execute("""
+                CREATE UNIQUE INDEX IF NOT EXISTS
+                idx_responses_client_token
+                ON responses(client_token)
+            """)
+
+            required = {
+                "participant_id", "client_token",
+                "q1", "q2", "q3", "q4", "q5", "q6",
+                "q7", "q8", "q9", "q10", "q11",
+                "feedback", "created_at", "status"
+            }
+
+            columns = {
+                row["name"]
+                for row in conn.execute("PRAGMA table_info(responses)")
+            }
+
+            missing = required - columns
+            if missing:
+                raise RuntimeError(
+                    "Missing responses columns: " + ", ".join(sorted(missing))
+                )
+
             existing = conn.execute(
                 "SELECT participant_id FROM responses WHERE client_token = ?",
                 (client_token,)
@@ -150,29 +185,46 @@ async def submit_survey(data: SurveySubmit, request: Request):
                     detail="با تشکر، شما قبلاً رأی داده‌اید."
                 )
 
+            answers = [
+                getattr(data, f"q{i}")
+                for i in range(1, 12)
+            ]
+
+            if any(not isinstance(x, int) or x < 1 or x > 4 for x in answers):
+                raise HTTPException(
+                    status_code=422,
+                    detail="پاسخ‌های نظرسنجی معتبر نیستند."
+                )
+
             pid = get_next_participant_id(conn)
             now = datetime.now(timezone.utc).isoformat()
             feedback = (data.feedback or "").strip()[:2000] or None
-            conn.execute(
-                """INSERT INTO responses (
+
+            conn.execute("""
+                INSERT INTO responses (
                     participant_id, client_token,
                     q1,q2,q3,q4,q5,q6,q7,q8,q9,q10,q11,
                     feedback, created_at, status
-                ) VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'registered'
-                )""",
-                (
-                    pid, client_token, data.q1, data.q2, data.q3, data.q4, data.q5,
-                    data.q6, data.q7, data.q8, data.q9, data.q10, data.q11,
-                    feedback, now
                 )
-            )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'registered')
+            """, (
+                pid, client_token,
+                *answers,
+                feedback, now
+            ))
 
-            conn.execute(
-                """INSERT INTO system_logs
-                (event_type, message, created_at) VALUES (?, ?, ?)""",
-                ("survey_submitted", f"participant={pid}", now)
-            )
+            try:
+                conn.execute("""
+                    INSERT INTO system_logs
+                    (event_type, message, created_at)
+                    VALUES (?, ?, ?)
+                """, (
+                    "survey_submitted",
+                    f"participant={pid}",
+                    now
+                ))
+            except sqlite3.Error as log_error:
+                print("SURVEY_LOG_ERROR:", repr(log_error))
 
         return {
             "success": True,
@@ -182,13 +234,17 @@ async def submit_survey(data: SurveySubmit, request: Request):
 
     except HTTPException:
         raise
+
     except sqlite3.IntegrityError:
         raise HTTPException(
             status_code=409,
-            detail="با تشکر، شما قبلاً رأی داده‌اید."
+            detail="این نظرسنجی قبلاً ثبت شده است."
         )
+
     except Exception as e:
-        print("SURVEY_SAVE_ERROR:", repr(e)); import traceback; traceback.print_exc()
+        import traceback
+        print("SURVEY_SAVE_ERROR:", repr(e))
+        traceback.print_exc()
         raise HTTPException(
             status_code=500,
             detail="خطا در ذخیره‌سازی. لطفاً دوباره تلاش کنید."
