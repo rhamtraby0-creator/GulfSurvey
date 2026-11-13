@@ -129,37 +129,50 @@ async def admin_page():
 
 
 
+
 @app.post("/api/survey/submit")
 async def submit_survey(data: SurveySubmit, request: Request):
-    client_token = request.headers.get("X-Client-Token", "").strip()
+    token = request.headers.get("X-Client-Token", "").strip()
 
-    if not re.fullmatch(r"[A-Za-z0-9_-]{20,100}", client_token):
+    if not re.fullmatch(r"[A-Za-z0-9_-]{20,100}", token):
         raise HTTPException(status_code=400, detail="شناسه مرورگر معتبر نیست.")
 
     answers = [getattr(data, f"q{i}") for i in range(1, 12)]
 
-    if any(not isinstance(x, int) or x < 1 or x > 4 for x in answers):
-        raise HTTPException(status_code=422, detail="پاسخ‌های نظرسنجی معتبر نیستند.")
-
     try:
         with get_db() as conn:
-            # Serialize simultaneous submissions.
             conn.execute("BEGIN IMMEDIATE")
 
-            existing = conn.execute(
+            columns = {
+                row["name"]
+                for row in conn.execute("PRAGMA table_info(responses)")
+            }
+            required = {
+                "participant_id", "client_token",
+                "q1", "q2", "q3", "q4", "q5", "q6",
+                "q7", "q8", "q9", "q10", "q11",
+                "feedback", "created_at", "status"
+            }
+            missing = required - columns
+            if missing:
+                raise RuntimeError(
+                    "Database schema missing: " + ", ".join(sorted(missing))
+                )
+
+            previous = conn.execute(
                 "SELECT participant_id FROM responses WHERE client_token = ?",
-                (client_token,)
+                (token,)
             ).fetchone()
 
-            if existing:
+            if previous:
                 raise HTTPException(
                     status_code=409,
                     detail="با تشکر، شما قبلاً رأی داده‌اید."
                 )
 
-            pid = get_next_participant_id(conn)
+            participant_id = get_next_participant_id(conn)
             now = datetime.now(timezone.utc).isoformat()
-            feedback = (data.feedback or "").strip()[:2000] or None
+            feedback = (data.feedback or "").strip() or None
 
             conn.execute("""
                 INSERT INTO responses (
@@ -169,7 +182,7 @@ async def submit_survey(data: SurveySubmit, request: Request):
                 )
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'registered')
             """, (
-                pid, client_token, *answers, feedback, now
+                participant_id, token, *answers, feedback, now
             ))
 
             try:
@@ -177,13 +190,13 @@ async def submit_survey(data: SurveySubmit, request: Request):
                     INSERT INTO system_logs
                     (event_type, message, created_at)
                     VALUES (?, ?, ?)
-                """, ("survey_submitted", f"participant={pid}", now))
+                """, ("survey_submitted", f"participant={participant_id}", now))
             except sqlite3.Error as log_error:
                 print("SURVEY_LOG_ERROR:", repr(log_error))
 
         return {
             "success": True,
-            "participant_id": pid,
+            "participant_id": participant_id,
             "message": "نظرسنجی با موفقیت ثبت شد"
         }
 
@@ -196,16 +209,24 @@ async def submit_survey(data: SurveySubmit, request: Request):
         )
     except Exception as e:
         import traceback
-        print("SURVEY_SAVE_ERROR:", repr(e))
+        print("SURVEY_V2_ERROR:", repr(e))
         traceback.print_exc()
         raise HTTPException(
             status_code=500,
-            detail=f"خطای داخلی ثبت: {type(e).__name__}: {str(e)[:500]}"
+            detail="خطا در ثبت نظرسنجی. لطفاً دوباره تلاش کنید."
         )
 
 @app.get("/api/health")
 async def public_health():
     return {"status": "ok", "service": "survey"}
+
+
+@app.get("/api/version")
+async def release_version():
+    return {
+        "release": "GULFSURVEY-SUBMIT-V2-20261113",
+        "submit": "v2"
+    }
 
 @app.post("/api/admin/login")
 async def admin_login(body: LoginRequest, response: Response):
