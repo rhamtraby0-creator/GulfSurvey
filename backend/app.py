@@ -95,6 +95,8 @@ def on_startup():
             conn.execute(
                 "ALTER TABLE responses ADD COLUMN client_token TEXT"
             )
+        if "answers" not in columns:
+            conn.execute("ALTER TABLE responses ADD COLUMN answers TEXT")
         conn.execute("""
             CREATE UNIQUE INDEX IF NOT EXISTS
             idx_responses_client_token
