@@ -247,7 +247,7 @@ async def submit_survey(data: SurveySubmit, request: Request):
         traceback.print_exc()
         raise HTTPException(
             status_code=500,
-            detail="خطا در ذخیره‌سازی. لطفاً دوباره تلاش کنید."
+            detail=f"خطای داخلی ثبت: {type(e).__name__}: {str(e)[:500]}"
         )
 
 @app.get("/api/health")
