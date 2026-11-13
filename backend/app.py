@@ -153,23 +153,16 @@ async def submit_survey(data: SurveySubmit, request: Request):
             pid = get_next_participant_id(conn)
             now = datetime.now(timezone.utc).isoformat()
             feedback = (data.feedback or "").strip()[:2000] or None
-
-            answers = json.dumps({
-                f"q{i}": getattr(data, f"q{i}")
-                for i in range(1, 12)
-            }, ensure_ascii=False)
-
             conn.execute(
                 """INSERT INTO responses (
-                    participant_id, client_token, answers,
+                    participant_id, client_token,
                     q1,q2,q3,q4,q5,q6,q7,q8,q9,q10,q11,
                     feedback, created_at, status
                 ) VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'registered'
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'registered'
                 )""",
                 (
-                    pid, client_token, answers,
-                    data.q1, data.q2, data.q3, data.q4, data.q5,
+                    pid, client_token, data.q1, data.q2, data.q3, data.q4, data.q5,
                     data.q6, data.q7, data.q8, data.q9, data.q10, data.q11,
                     feedback, now
                 )
